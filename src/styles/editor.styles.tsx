@@ -25,6 +25,9 @@ export const EditorCommonStyles = createGlobalStyle`
     background-color: #eee;
     border-radius: 8px 8px 0 0;
   }
+  /* .ql-snow .ql-editor pre.ql-syntax {
+    background-color: #002B36;
+  } */
 `;
 
 export const EditorWrapper = styled.div`
