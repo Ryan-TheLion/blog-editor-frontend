@@ -1,15 +1,26 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
-// import "highlight.js/styles/night-owl.css";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useLayoutEffect,
+} from "react";
 import {
-  EditorCommonStyles,
+  EditorStyles,
   EditorWrapper,
   GlobalStyles,
   StyledDevelopWrapper,
 } from "../styles";
 import "react-quill/dist/quill.snow.css";
-import ReactQuill, { Quill, ReactQuillProps } from "react-quill";
-import { Quill as EditorQuill } from "quill";
-import { CustomToolbars, formats, modules } from "../customQuill";
+import ReactQuill, { ReactQuillProps } from "react-quill";
+import {
+  CustomFormatName,
+  customIconPickers,
+  CustomToolbars,
+  formats,
+  modules,
+} from "../customQuill";
+import { getEditor, getPicker } from "../lib";
 
 interface EditorProps
   extends Pick<
@@ -32,25 +43,71 @@ export const Editor = ({
   readOnly,
 }: EditorProps) => {
   const editorRef = useRef<ReactQuill>(null);
-  const [editor, setEditor] = useState<EditorQuill>();
   const [contents, setContents] = useState("");
 
-  const module = useMemo(() => modules(editor), [editor]);
+  // eslint-disable-next-line
+  const module = useMemo(() => modules, []);
+
+  useLayoutEffect(() => {
+    // helper function
+    const changeAllCustomPickersToIconPicker = (
+      targetCustomFormatList: CustomFormatName[]
+    ) => {
+      targetCustomFormatList.forEach((customFormat) =>
+        changeCustomPickerToIconPicker(customFormat)
+      );
+    };
+
+    // helper function
+    const changeCustomPickerToIconPicker = (
+      targetCustomFormat: CustomFormatName
+    ) => {
+      const editor = getEditor();
+      // @ts-ignore
+      const pickers = editor.theme.pickers;
+      const targetPicker = getPicker(targetCustomFormat);
+
+      const targetIndex = Array.from(pickers).findIndex(
+        (picker) => picker === targetPicker
+      );
+
+      if (targetIndex > -1) {
+        pickers[targetIndex] = customIconPickers[targetCustomFormat];
+      }
+
+      // Picker, IconPicker가 같이 존재해서 중복되기 때문에 사용되지 않는 기존 Picker 제거
+      const removeTarget = document.querySelector(
+        `.ql-${targetCustomFormat}.ql-picker[style*="display: none;"]`
+      );
+      removeTarget?.parentElement?.removeChild(removeTarget);
+    };
+
+    // run
+    changeAllCustomPickersToIconPicker(["textUnderline"]);
+  }, []);
 
   useEffect(() => {
-    const _editor = editorRef?.current?.editor;
-    if (!_editor) return;
-
-    _editor.root.setAttribute("spellcheck", "false");
-    console.log(editorRef.current);
-    setEditor(_editor);
+    const editor = getEditor();
+    editor.root.setAttribute("spellcheck", "false");
+    console.log(editor);
   }, []);
 
   return (
     <Wrapper.Develop>
       <GlobalStyles />
-      <EditorCommonStyles />
-      <Wrapper.Editor>
+      <EditorStyles />
+      <Wrapper.Editor
+        onKeyDown={(e) => {
+          if (e.ctrlKey && e.key === "e") {
+            // chrome ctrl + e 충돌 방지
+            e.preventDefault();
+          }
+          if (e.ctrlKey && e.key === "s") {
+            // chrome ctrl + s 충돌 방지
+            e.preventDefault();
+          }
+        }}
+      >
         <CustomToolbars />
         <ReactQuill
           ref={editorRef}
