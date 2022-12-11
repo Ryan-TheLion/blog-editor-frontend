@@ -1,12 +1,9 @@
 import * as hljs from "highlight.js";
 import "highlight.js/styles/base16/dracula.css";
-import { Quill, QuillOptions } from "react-quill";
-import { Quill as EditorQuill } from "quill";
+import { QuillOptions } from "react-quill";
 import axios from "axios";
-
-const editorRef: { editor?: EditorQuill } = {
-  editor: undefined,
-};
+import { getEditor } from "../lib";
+import { bindings } from "./modules";
 
 const handlers = {
   image() {
@@ -84,11 +81,15 @@ const handlers = {
       Array.from(files).forEach(async (file) => {
         const { ok, imageSrc } = await fileUpload(file);
         if (ok) {
-          const range = editorRef.editor?.getSelection()?.index;
+          const editor = getEditor();
+
+          const range = editor.getSelection()?.index;
           if (range === undefined) return;
+
           console.log({ imageSrc, range });
-          editorRef.editor?.setSelection(range, 1, "user");
-          editorRef.editor?.clipboard.dangerouslyPasteHTML(
+
+          editor.setSelection(range, 1, "user");
+          editor.clipboard.dangerouslyPasteHTML(
             range,
             `<img src=${imageSrc} alt=${file.name} />`
           );
@@ -120,11 +121,10 @@ const editorModules: Pick<QuillOptions, "modules"> = {
       },
       interval: 500,
     },
+    keyboard: {
+      bindings,
+    },
   },
 };
 
-export const modules = (editor?: EditorQuill) => {
-  editorRef.editor = editor;
-
-  return editorModules.modules;
-};
+export const modules = editorModules.modules;
